@@ -35,3 +35,18 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
+UAnimMontage* AEnemy::get_montage() const
+{
+	return montage;
+}
+
+int AEnemy::melee_attack_Implementation()
+{
+	if(montage)
+	{
+		PlayAnimMontage(montage);
+	}
+	return 0;
+}
+
+
