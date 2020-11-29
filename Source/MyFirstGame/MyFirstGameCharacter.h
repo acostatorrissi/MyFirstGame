@@ -29,6 +29,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	// Getter and setter for health components
+	float get_health() const;
+	float get_max_health() const;
+	void set_health(float const new_health);
+
+	void Tick(float DeltaSeconds) override;
+
 protected:
 
 	void SwitchCamera();
@@ -72,6 +79,10 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
+	class UWidgetComponent* widget_component;
+	float const max_health = 100.0f;
+	float health;
+	
 	void Switch();
 
 	bool bFirstPersonCamera;

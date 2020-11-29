@@ -10,6 +10,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "Components/WidgetComponent.h"
+#include "UObject/ConstructorHelpers.h"
+#include "HealthBar.h"
 //#include "Runtime/Engine/Classes/Engine/World.h"
 //#include "Components/SkeletalMeshComponent.h" 
 //#include "Materials/MaterialInstanceDynamic.h"
@@ -20,7 +23,9 @@
 //////////////////////////////////////////////////////////////////////////
 // AMyFirstGameCharacter
 
-AMyFirstGameCharacter::AMyFirstGameCharacter()
+AMyFirstGameCharacter::AMyFirstGameCharacter() :
+	health(max_health),
+	widget_component(CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthValue")))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -58,6 +63,18 @@ AMyFirstGameCharacter::AMyFirstGameCharacter()
 	SwitchCamera();
 
 	setup_stimulus();
+
+	if(widget_component)
+	{
+		widget_component->SetupAttachment(RootComponent);
+		widget_component->SetWidgetSpace(EWidgetSpace::Screen);
+		widget_component->SetRelativeLocation(FVector(0.0f, 0.0f, 85.0f));
+		static ConstructorHelpers::FClassFinder<UUserWidget> widget_class(TEXT("/Game/UI/HealthBar_BP"));
+		if(widget_class.Succeeded())
+		{
+			widget_component->SetWidgetClass(widget_class.Class);
+		}
+	}
 }
 
 void AMyFirstGameCharacter::Switch()
@@ -188,4 +205,32 @@ void AMyFirstGameCharacter::setup_stimulus()
 	stimulus->RegisterForSense(TSubclassOf<UAISense_Sight>());
 	stimulus->RegisterWithPerceptionSystem();
 }
+
+float AMyFirstGameCharacter::get_health() const
+{
+	return health;
+}
+
+void AMyFirstGameCharacter::set_health(float const new_health)
+{
+	health = new_health;
+}
+
+void AMyFirstGameCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	auto const uw = Cast<UHealthBar>(widget_component->GetUserWidgetObject());
+	if(uw)
+	{
+		uw->set_bar_value_percent(health / max_health);
+	}
+}
+
+float AMyFirstGameCharacter::get_max_health() const
+{
+	return max_health;
+}
+
+
+
 
