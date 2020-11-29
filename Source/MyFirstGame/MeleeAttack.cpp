@@ -2,7 +2,6 @@
 
 
 #include "MeleeAttack.h"
-#include "Combate_inter.h"
 #include "AIController.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
@@ -20,13 +19,12 @@ EBTNodeResult::Type UMeleeAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp,
 {
 	// Get the Enemy
 	AAIController* const cont = OwnerComp.GetAIOwner();
-	AEnemy* const enemy = Cast<AEnemy>(cont->GetPawn());
 
-	if(ICombate_inter* const icombat = Cast<ICombate_inter>(enemy))
+	if(AEnemy* const enemy = Cast<AEnemy>(cont->GetPawn()))
 	{
 		if(montage_has_finished(enemy))
 		{
-			icombat->Execute_melee_attack(enemy);
+			enemy->melee_attack();
 		}
 	}
 

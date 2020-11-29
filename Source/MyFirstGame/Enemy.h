@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Combate_inter.h"
 #include "Animation/AnimMontage.h"
 #include "Enemy.generated.h"
 
 UCLASS()
-class MYFIRSTGAME_API AEnemy : public ACharacter, public ICombate_inter
+class MYFIRSTGAME_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -17,11 +16,8 @@ public:
 	// Sets default values for this character's properties
 	AEnemy();
 
-	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Combat")
-	//int melee_attack();
-
-	int melee_attack_Implementation() override;
-
+	void melee_attack();
+	
 	UAnimMontage* get_montage() const;
 	
 protected:

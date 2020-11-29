@@ -40,13 +40,14 @@ UAnimMontage* AEnemy::get_montage() const
 	return montage;
 }
 
-int AEnemy::melee_attack_Implementation()
+
+void AEnemy::melee_attack()
 {
 	if(montage)
 	{
 		PlayAnimMontage(montage);
 	}
-	return 0;
 }
+
 
 
