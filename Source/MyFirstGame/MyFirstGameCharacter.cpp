@@ -13,11 +13,13 @@
 #include "Components/WidgetComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "HealthBar.h"
-//#include "Runtime/Engine/Classes/Engine/World.h"
-//#include "Components/SkeletalMeshComponent.h" 
-//#include "Materials/MaterialInstanceDynamic.h"
-//#include "GameFramework/PlayerController.h"
-
+#include "Runtime/Engine/Classes/Components/BoxComponent.h"
+#include "Enemy.h"
+#include "Runtime/Engine/Classes/Engine/World.h"
+#include "Components/SkeletalMeshComponent.h" 
+#include "Materials/MaterialInstanceDynamic.h"
+#include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -26,6 +28,7 @@
 AMyFirstGameCharacter::AMyFirstGameCharacter() :
 	health(max_health),
 	widget_component(CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthValue")))
+	//fist_collision_box(CreateDefaultSubobject<UBoxComponent>(TEXT("RightFistCollision")))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -48,7 +51,6 @@ AMyFirstGameCharacter::AMyFirstGameCharacter() :
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	//CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
 	// Create a follow camera
@@ -75,18 +77,28 @@ AMyFirstGameCharacter::AMyFirstGameCharacter() :
 			widget_component->SetWidgetClass(widget_class.Class);
 		}
 	}
+
+	fist_collision_box = CreateDefaultSubobject<UBoxComponent>(TEXT("RightFistCollision"));
+
+	if (fist_collision_box)
+	{
+		FVector const extent(8.0f);
+		fist_collision_box->SetBoxExtent(extent, false);
+		fist_collision_box->SetCollisionProfileName("NoCollision");
+	}
+}
+
+void AMyFirstGameCharacter::on_attack()
+{
+	if(montage)
+	{
+		PlayAnimMontage(montage);
+	}
 }
 
 void AMyFirstGameCharacter::Switch()
 {
-	if(bFirstPersonCamera)
-	{
-		bFirstPersonCamera = false;
-	}
-	else
-	{
-		bFirstPersonCamera = true;
-	}
+	bFirstPersonCamera = !bFirstPersonCamera;
 	SwitchCamera();
 }
 
@@ -94,16 +106,16 @@ void AMyFirstGameCharacter::SwitchCamera()
 {
 	if(bFirstPersonCamera)
 	{
-		CameraBoom->SetRelativeLocation(FVector(23.0f, 0, 67.0f));
-		CameraBoom->TargetArmLength = 0;
+		CameraBoom->SetRelativeLocation(FVector(16.0f, 0, 71.0f));   //23.0.67
+		CameraBoom->TargetArmLength = -20.0f;
 		bUseControllerRotationYaw = true;
-		GetMesh()->bOwnerNoSee = true;
+		GetMesh()->bOwnerNoSee = false;
 		GetMesh()->MarkRenderStateDirty();
 	}
 	else
 	{
 		CameraBoom->SetRelativeLocation(FVector(0, 0, 0));
-		CameraBoom->TargetArmLength = 300.0f;
+		CameraBoom->TargetArmLength = 300.0f; 
 		bUseControllerRotationYaw = false;
 		GetMesh()->bOwnerNoSee = false;
 		GetMesh()->MarkRenderStateDirty();
@@ -120,6 +132,7 @@ void AMyFirstGameCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("SwitchView", IE_Pressed, this, &AMyFirstGameCharacter::Switch);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AMyFirstGameCharacter::on_attack);
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyFirstGameCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyFirstGameCharacter::MoveRight);
@@ -140,7 +153,6 @@ void AMyFirstGameCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AMyFirstGameCharacter::OnResetVR);
 }
-
 
 void AMyFirstGameCharacter::OnResetVR()
 {
@@ -214,11 +226,22 @@ float AMyFirstGameCharacter::get_health() const
 void AMyFirstGameCharacter::set_health(float const new_health)
 {
 	health = new_health;
+	if(health <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("You died"));
+		auto const controller = UGameplayStatics::GetPlayerController(this, 0);
+		controller->SetCinematicMode(true, false, false, true, true);
+		GetMesh()->SetSimulatePhysics(true);
+		GetMovementComponent()->MovementState.bCanJump = false;
+
+		UGameplayStatics::OpenLevel(this, "GameOver");
+		
+	}
 }
 
 void AMyFirstGameCharacter::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaSeconds);
+	//Super::Tick(DeltaSeconds);
 	auto const uw = Cast<UHealthBar>(widget_component->GetUserWidgetObject());
 	if(uw)
 	{
@@ -230,6 +253,65 @@ float AMyFirstGameCharacter::get_max_health() const
 {
 	return max_health;
 }
+
+void AMyFirstGameCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	APlayerCameraManager* const cam_manager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+	cam_manager->ViewPitchMin = -50.0f;
+	cam_manager->ViewPitchMax = 10.0f;
+	
+	if (fist_collision_box)
+	{
+		FAttachmentTransformRules const rules(
+			EAttachmentRule::SnapToTarget,
+			EAttachmentRule::SnapToTarget,
+			EAttachmentRule::KeepWorld,
+			false);
+
+		fist_collision_box->AttachToComponent(GetMesh(), rules, "hand_r_socket");
+		fist_collision_box->SetRelativeLocation(FVector(-7.0f, 0.0f, 0.0f));
+	}
+
+	// Attach delegates to the Collision box
+
+	if(fist_collision_box)
+	{
+		fist_collision_box->OnComponentBeginOverlap.AddDynamic(this, &AMyFirstGameCharacter::on_attack_overlap_begin);
+		fist_collision_box->OnComponentEndOverlap.AddDynamic(this, &AMyFirstGameCharacter::on_attack_overlap_end);
+	}
+}
+
+void AMyFirstGameCharacter::on_attack_overlap_begin(UPrimitiveComponent* const overlapped_component, AActor* const other_actor, UPrimitiveComponent* other_component, int const other_body_index, bool const from_sweep, FHitResult const& sweep_result)
+{
+	if(AEnemy* const enemy = Cast<AEnemy>(other_actor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Some warning message"));
+		float const new_health = enemy->get_health() - enemy->get_max_health() * 0.1f;
+		enemy->set_health(new_health);
+	}
+}
+
+void AMyFirstGameCharacter::on_attack_overlap_end(UPrimitiveComponent* const overlapped_component, AActor* const other_actor, UPrimitiveComponent* other_component, int const other_body_index)
+{
+	
+}
+
+void AMyFirstGameCharacter::attack_start()
+{
+	UE_LOG(LogTemp, Warning, TEXT("attack starts"));
+	fist_collision_box->SetCollisionProfileName("Fist");
+	fist_collision_box->SetNotifyRigidBodyCollision(true);
+}
+
+void AMyFirstGameCharacter::attack_end()
+{
+	UE_LOG(LogTemp, Warning, TEXT("attack ends"));
+	fist_collision_box->SetCollisionProfileName("NoCollision");
+	fist_collision_box->SetNotifyRigidBodyCollision(false);
+}
+
 
 
 
