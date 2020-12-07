@@ -20,5 +20,7 @@ public class MyFirstGame : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore" });
+
+		//check if needed to add slate and salte core as private dependencies
 	}
 }

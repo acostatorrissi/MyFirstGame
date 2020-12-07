@@ -17,9 +17,12 @@
 #include "Enemy.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
 #include "Components/SkeletalMeshComponent.h" 
+#include "GameFramework/GameModeBase.h"
+#include "MyFirstGameGameMode.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -38,9 +41,9 @@ AMyFirstGameCharacter::AMyFirstGameCharacter() :
 	BaseLookUpRate = 45.f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	bUseControllerRotationPitch = true;
+	bUseControllerRotationYaw = true; //false
+	bUseControllerRotationRoll = true;
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
@@ -52,6 +55,7 @@ AMyFirstGameCharacter::AMyFirstGameCharacter() :
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->bInheritRoll = false; //delete
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -86,6 +90,9 @@ AMyFirstGameCharacter::AMyFirstGameCharacter() :
 		fist_collision_box->SetBoxExtent(extent, false);
 		fist_collision_box->SetCollisionProfileName("NoCollision");
 	}
+
+	InitialRocks = 0.f;
+	CharacterRocks = InitialRocks;
 }
 
 void AMyFirstGameCharacter::on_attack()
@@ -104,7 +111,7 @@ void AMyFirstGameCharacter::Switch()
 
 void AMyFirstGameCharacter::SwitchCamera()
 {
-	if(bFirstPersonCamera)
+	if (bFirstPersonCamera)
 	{
 		CameraBoom->SetRelativeLocation(FVector(16.0f, 0, 71.0f));   //23.0.67
 		CameraBoom->TargetArmLength = -20.0f;
@@ -114,6 +121,7 @@ void AMyFirstGameCharacter::SwitchCamera()
 	}
 	else
 	{
+		
 		CameraBoom->SetRelativeLocation(FVector(0, 0, 0));
 		CameraBoom->TargetArmLength = 300.0f; 
 		bUseControllerRotationYaw = false;
@@ -312,6 +320,38 @@ void AMyFirstGameCharacter::attack_end()
 	fist_collision_box->SetNotifyRigidBodyCollision(false);
 }
 
+float AMyFirstGameCharacter::GetInitialRocks()
+{
+	return InitialRocks;
+}
+
+float AMyFirstGameCharacter::GetCurrentRocks()
+{
+	return CharacterRocks;
+}
+
+void AMyFirstGameCharacter::UpdateRocks()
+{
+
+	CharacterRocks++;
+
+	
+        AGameModeBase *Game = GetWorld()->GetAuthGameMode();
+
+        AMyFirstGameGameMode* GameMode = Cast<AMyFirstGameGameMode>(Game);
+
+        if(CharacterRocks >= GameMode->GetRocksToWin()) {
+	          UGameplayStatics::OpenLevel(this, "Win");
+        }
+}
+
+bool AMyFirstGameCharacter::GetIsGrabbing() {
+	return bIsGrabbing;
+}
+
+void AMyFirstGameCharacter::SetIsGrabbing(bool IsGrabbing) {
+	bIsGrabbing = IsGrabbing;
+}
 
 
 

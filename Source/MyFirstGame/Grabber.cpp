@@ -3,6 +3,7 @@
 #include "Grabber.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
+#include "Pickup.h"
 #include "DrawDebugHelpers.h"
 
 
@@ -62,11 +63,26 @@ void UGrabber::Grab()
 						GetPlayersReach(),
 						FRotator::ZeroRotator
 					);
-	}	
+
+
+		
+	}
+
+	if (HitResult.GetActor()) {
+		APickup* Pickup = Cast<APickup>(HitResult.GetActor());
+		Pickup->SetIsGrabbed(true);
+	}
+	
 }
 
 void UGrabber::Release()
 {
+	
+        if(PhysicsHandle->GetGrabbedComponent()) {
+	    APickup* Pickup = Cast<APickup>(PhysicsHandle->GetGrabbedComponent()->GetOwner());
+	    Pickup->SetIsGrabbed(false);
+        }
+
 	PhysicsHandle->ReleaseComponent();
 }
 
@@ -79,7 +95,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	if(PhysicsHandle->GrabbedComponent)
 	{
 		//move the object we are holding
-		PhysicsHandle->SetTargetLocation(GetPlayersReach());
+		PhysicsHandle->SetTargetLocation(GetPlayersReach()); 
 	}
 }
 
@@ -89,12 +105,11 @@ FHitResult UGrabber::GetFirstPhysicsBodyInReach() const
 	FCollisionQueryParams TraceParams(FName(TEXT("")), false, GetOwner());
 
 	//test
-	
 	FVector start = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
 	FVector ForwardVector = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetActorForwardVector();
 	start = start + (ForwardVector * 10.f); //300
 	FVector end = start + (ForwardVector * 4000.f); //5000
-	
+
 	//Ray-cast
 	GetWorld()->LineTraceSingleByObjectType(
 		OUT Hit,
@@ -106,18 +121,16 @@ FHitResult UGrabber::GetFirstPhysicsBodyInReach() const
 		TraceParams
 	);
 
-	/*
+  /*
 	DrawDebugLine(
 		GetWorld(),
-		GetPlayersWorldPos(),
-		GetPlayersReach(),
-		FColor::Green,
-		false,
-		1,
-		0,
-		1
+		start,
+		end,
+		FColor(255, 0, 0),
+		true, -1, 0,
+		12.333
 	);
-	*/
+  */
 	return Hit;
 }
 

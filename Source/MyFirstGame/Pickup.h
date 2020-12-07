@@ -4,14 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Grabber.h"
 #include "Pickup.generated.h"
 
 UCLASS()
 class MYFIRSTGAME_API APickup : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	APickup();
 
@@ -24,7 +25,16 @@ public:
 	// Return the mesh for the pickup
 	FORCEINLINE class UStaticMeshComponent* GetMesh() const { return PickupMesh; }
 
+	UFUNCTION(BlueprintCallable, Category = "Particle", meta = (AllowProtectedAccess = "true"))
+	bool GetIsGrabbed() const;
+
+        UFUNCTION()
+	void SetIsGrabbed(bool IsGrabbed);
+	
 protected:
+
+	bool bIsGrabbed;
+	
 	//Static mesh to represent the pickup in the level
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pickup", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* PickupMesh;

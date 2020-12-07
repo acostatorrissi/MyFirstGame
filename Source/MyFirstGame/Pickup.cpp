@@ -19,7 +19,7 @@ APickup::APickup()
 void APickup::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	bIsGrabbed = false;
 }
 
 // Called every frame
@@ -28,4 +28,16 @@ void APickup::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
+
+void APickup::SetIsGrabbed(bool IsGrabbed)
+{
+	UE_LOG(LogTemp, Warning, TEXT("grabbed - ungrabbed"));
+	bIsGrabbed = IsGrabbed;
+}
+
+bool APickup::GetIsGrabbed() const
+{
+	return bIsGrabbed;
+}
+
 

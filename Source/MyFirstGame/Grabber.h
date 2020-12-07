@@ -40,9 +40,9 @@ protected:
 	//Return the first actor within reach with a physics body
 	FHitResult GetFirstPhysicsBodyInReach() const;
 
-	float Reach = 100.f;
+	float Reach = 100.0f;
 	
-private:
+
 	
 	
 };

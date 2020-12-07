@@ -6,7 +6,9 @@
 #include "GameFramework/Character.h"
 #include "Animation/AnimMontage.h"
 #include "CharacterBase.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "MyFirstGameCharacter.generated.h"
+
 
 UCLASS(config=Game)
 class AMyFirstGameCharacter : public ACharacter
@@ -39,10 +41,29 @@ public:
 	virtual void attack_start();
 	virtual void attack_end();
 
+	//UFUNCTION(BlueprintPure, Category = "Power")
+	//float GetRocksToWin() const;
+
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Power", Meta = (BlueprintProtected = "true"))
+	//float RocksToWin;
+
+	UFUNCTION(BlueprintPure, Category = "Rock")
+	float GetInitialRocks();
+
+	UFUNCTION(BlueprintPure, Category = "Rock")
+	float GetCurrentRocks();
+
+	UFUNCTION(BlueprintCallable, Category = "Rock")
+	void UpdateRocks();
 
 	void Tick(float DeltaSeconds) override;
 
 	void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable, Category = "Particle", meta = (AllowProtectedAccess = "true"))
+	bool GetIsGrabbing();
+
+	void SetIsGrabbing(bool IsGrabbing);
 	
 protected:
 
@@ -50,6 +71,11 @@ protected:
 	class UBoxComponent* fist_collision_box;
 
 	void SwitchCamera();
+
+	bool bIsGrabbing;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocks")
+	float InitialRocks;
 	
 	/** Resets HMD orientation in VR. */
 	void OnResetVR();
@@ -94,9 +120,12 @@ private:
 	UAnimMontage* montage;
 
 	class UWidgetComponent* widget_component;
-	float const max_health = 100.0f;
+	float const max_health = 30.0f;
 	float health;
 
+	// Current Rocks collected
+	UPROPERTY(VisibleAnywhere, Category= "Rocks")
+	float CharacterRocks;
 	
 	void Switch();
 

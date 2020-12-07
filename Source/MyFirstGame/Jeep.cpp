@@ -3,6 +3,9 @@
 
 #include "Jeep.h"
 #include "Components/SphereComponent.h"
+#include "MyFirstGameCharacter.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AJeep::AJeep()
@@ -43,5 +46,12 @@ void AJeep::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherAct
 	if ( ( OtherActor != nullptr ) && (OtherActor != this) && (OtherComp != nullptr))
 	{
 		OtherActor->Destroy();
+	
+		ACharacter* Character = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+
+		AMyFirstGameCharacter* MyCharacter = Cast<AMyFirstGameCharacter>(Character);
+		
+		MyCharacter->UpdateRocks();
+		
 	}
 }
